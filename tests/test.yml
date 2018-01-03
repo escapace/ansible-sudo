@@ -6,4 +6,4 @@
 
 - hosts: test-images
   roles:
-  - role: epiloque.sudo
+  - role: escapace.sudo
