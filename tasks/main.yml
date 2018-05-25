@@ -22,3 +22,6 @@
     group: root
     validate: "/usr/sbin/visudo -cf %s"
 
+- name: enable ssh pipelining
+  set_fact:
+    ansible_ssh_pipelining: true
