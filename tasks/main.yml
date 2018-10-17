@@ -1,9 +1,9 @@
 ---
 
 - name: install sudo
-  action: "{{ ansible_pkg_mgr }} name={{ item }} state=present"
-  with_items:
-    - sudo
+  package:
+    name: ["sudo"]
+    state: present
 
 - name: sudoers.d directory
   file:
