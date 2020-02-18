@@ -1,16 +1,14 @@
 galaxy_info:
   description: sudo role
   issue_tracker_url: https://github.com/escapace/ansible-sudo/issues
+  author: Escapace
   license: Apache-2.0
   min_ansible_version: 2.4
   github_branch: master
   platforms:
   - name: EL
     versions:
-    - 7
-  - name: Ubuntu
-    versions:
-    - xenial
+    - 8
 
   galaxy_tags:
   - escapace
