@@ -1,5 +1,4 @@
 ---
-prerun: false
 dependency:
   name: galaxy
 driver:
@@ -10,5 +9,6 @@ lint: |
 platforms:
   - name: instance
     image: ghcr.io/escapace/ansible-test-containers
+    pre_build_image: true
 provisioner:
   name: ansible
