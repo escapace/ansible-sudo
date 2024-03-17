@@ -1,8 +1,7 @@
 ---
-
 - name: install sudo
   ansible.builtin.package:
-    name: ["sudo"]
+    name: [sudo]
     state: present
 
 - name: sudoers.d directory
@@ -10,17 +9,17 @@
     path: /etc/sudoers.d
     owner: root
     group: root
-    mode: 0755
+    mode: "0755"
     state: directory
 
 - name: set sudo configuration
   ansible.builtin.template:
     src: templates/sudoers.j2
-    dest: "/etc/sudoers"
-    mode: 0440
+    dest: /etc/sudoers
+    mode: "0440"
     owner: root
     group: root
-    validate: "/usr/sbin/visudo -cf %s"
+    validate: /usr/sbin/visudo -cf %s
 
 - name: enable ssh pipelining
   ansible.builtin.set_fact:
