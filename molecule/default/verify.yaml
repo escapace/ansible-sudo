@@ -1,0 +1,82 @@
+---
+- name: verify wheel sudo policy
+  hosts: all
+  tasks:
+    - name: create wheel member for authorization checks
+      ansible.builtin.user:
+        name: sudo_policy_probe
+        groups: wheel
+
+    - name: inspect the packaged sudo policy
+      # package_facts cannot detect changes to RPM-owned files.
+      ansible.builtin.command: rpm -V sudo # noqa: command-instead-of-module
+      changed_when: false
+
+    - name: inspect default wheel authorization
+      ansible.builtin.command: sudo -l -U sudo_policy_probe
+      register: sudo_default_authorization
+      changed_when: false
+
+    - name: confirm passwordless wheel authorization
+      ansible.builtin.assert:
+        that: "(sudo_default_authorization.stdout_lines[-1] | trim) == '(ALL) NOPASSWD: ALL'"
+        fail_msg: "Unexpected wheel authorization: {{ sudo_default_authorization.stdout }}"
+
+    - name: run sudo without a password as a wheel member
+      ansible.builtin.command: runuser -u sudo_policy_probe -- sudo -n /usr/bin/id -u
+      register: sudo_without_password
+      changed_when: false
+
+    - name: confirm command ran as root
+      ansible.builtin.assert:
+        that: sudo_without_password.stdout == '0'
+
+    - name: disable passwordless wheel authorization
+      ansible.builtin.include_role:
+        name: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | basename }}"
+      vars:
+        sudo_wheel_nopasswd: false
+
+    - name: inspect restored wheel authorization
+      ansible.builtin.command: sudo -l -U sudo_policy_probe
+      register: sudo_restored_authorization
+      changed_when: false
+
+    - name: confirm packaged password requirement
+      ansible.builtin.assert:
+        that: "(sudo_restored_authorization.stdout_lines[-1] | trim) == '(ALL) ALL'"
+
+    - name: attempt non-interactive sudo without the override
+      ansible.builtin.command: runuser -u sudo_policy_probe -- sudo -n /usr/bin/id -u
+      register: sudo_requires_password
+      changed_when: false
+      failed_when: false
+
+    - name: confirm non-interactive sudo requires a password
+      ansible.builtin.assert:
+        that:
+          - sudo_requires_password.rc != 0
+          - "'a password is required' in sudo_requires_password.stderr"
+
+    - name: check complete policy after disabling the override
+      ansible.builtin.command: visudo -c
+      changed_when: false
+
+    - name: restore passwordless wheel authorization
+      ansible.builtin.include_role:
+        name: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | basename }}"
+      vars:
+        sudo_wheel_nopasswd: true
+
+    - name: check complete policy after restoring the override
+      ansible.builtin.command: visudo -c
+      changed_when: false
+
+    - name: inspect restored passwordless wheel authorization
+      ansible.builtin.command: sudo -l -U sudo_policy_probe
+      register: sudo_reenabled_authorization
+      changed_when: false
+
+    - name: confirm passwordless authorization is restored
+      ansible.builtin.assert:
+        that: "(sudo_reenabled_authorization.stdout_lines[-1] | trim) == '(ALL) NOPASSWD: ALL'"

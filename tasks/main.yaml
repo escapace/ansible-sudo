@@ -1,26 +1,26 @@
 ---
+- name: validate wheel sudo policy
+  ansible.builtin.assert:
+    that: sudo_wheel_nopasswd is boolean
+    fail_msg: sudo_wheel_nopasswd must be a boolean
+
 - name: install sudo
   ansible.builtin.package:
-    name: [sudo]
+    name: sudo
     state: present
 
-- name: sudoers.d directory
-  ansible.builtin.file:
-    path: /etc/sudoers.d
+- name: allow wheel to use sudo without a password
+  ansible.builtin.copy:
+    content: "%wheel ALL=(ALL) NOPASSWD: ALL\n"
+    dest: /etc/sudoers.d/90-ansible-sudo
     owner: root
     group: root
-    mode: "0755"
-    state: directory
-
-- name: set sudo configuration
-  ansible.builtin.template:
-    src: templates/sudoers.j2
-    dest: /etc/sudoers
     mode: "0440"
-    owner: root
-    group: root
     validate: /usr/sbin/visudo -cf %s
+  when: sudo_wheel_nopasswd
 
-- name: enable ssh pipelining
-  ansible.builtin.set_fact:
-    ansible_ssh_pipelining: true
+- name: remove passwordless wheel sudo policy
+  ansible.builtin.file:
+    path: /etc/sudoers.d/90-ansible-sudo
+    state: absent
+  when: not sudo_wheel_nopasswd
